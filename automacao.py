@@ -1,3 +1,4 @@
+import os
 import openpyxl
 from openpyxl.utils import get_column_letter
 from selenium import webdriver
@@ -8,6 +9,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 import time
 from datetime import datetime
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+# ─── SUPABASE ─────────────────────────────────────────────────────────────────
+load_dotenv()
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://lbabvykzvjpvaolplsay.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "sb_publishable_aSkxgh7tMe1eS8O7WThVpw_AQterGBf")
+sb: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Configuração do Selenium
 chrome_options = Options()
@@ -119,13 +128,23 @@ def formatar_valor(valor_str):
 def mapear_forma_pagamento(forma):
     """Mapeia forma de pagamento para o valor do select"""
     forma_lower = forma.lower().strip()
-    if 'pix' in forma_lower:
+    # Normaliza acentos para comparação segura
+    forma_norm = (forma_lower
+                  .replace('ã','a').replace('â','a').replace('á','a')
+                  .replace('é','e').replace('ê','e').replace('í','i')
+                  .replace('ó','o').replace('ô','o').replace('ú','u')
+                  .replace('ç','c'))
+    if 'pix' in forma_norm:
         return 'pix'
-    elif 'cartão' in forma_lower or 'cartao' in forma_lower:
-        return 'cartao'
-    elif 'boleto' in forma_lower:
+    elif 'debito' in forma_norm:
+        return 'cartao_debito'
+    elif 'credito' in forma_norm:
+        return 'cartao_credito'
+    elif 'cartao' in forma_norm:
+        return 'cartao_credito'   # cartão sem especificar → crédito
+    elif 'boleto' in forma_norm:
         return 'boleto'
-    elif 'dinheiro' in forma_lower or 'cash' in forma_lower:
+    elif 'dinheiro' in forma_norm or 'cash' in forma_norm:
         return 'dinheiro'
     return forma_lower
 
@@ -160,16 +179,25 @@ def preencher_formulario(cliente):
         forma_mapeada = mapear_forma_pagamento(cliente['forma'])
         select_forma.select_by_value(forma_mapeada)
         
-        # Campo Valor
+        # Campo Valor — send_keys digita os caracteres e oninput dispara a máscara
         campo_valor = driver.find_element(By.ID, "f-valor")
         campo_valor.clear()
         valor_limpo = formatar_valor(cliente['valor'])
         campo_valor.send_keys(valor_limpo)
+        driver.execute_script(
+            "var el = document.getElementById('f-valor');"
+            "el.dispatchEvent(new Event('input', {bubbles: true}));"
+        )
         
-        # Campo Data de Consulta (Vencimento) - Usar JavaScript pois input type="date" não aceita send_keys
+        # Campo Data de Consulta — JS seta o valor e dispara os eventos necessários
         data_formatada = formatar_data_entrada(cliente['data_consulta'])
-        campo_venc = driver.find_element(By.ID, "f-venc")
-        driver.execute_script(f"document.getElementById('f-venc').value = '{data_formatada}'")
+        driver.execute_script(
+            "var el = document.getElementById('f-venc');"
+            "el.value = arguments[0];"
+            "el.dispatchEvent(new Event('input',  {bubbles: true}));"
+            "el.dispatchEvent(new Event('change', {bubbles: true}));",
+            data_formatada
+        )
         
         # Marca a caixa de pago se o status do cliente for pago
         campo_pago = driver.find_element(By.ID, "f-pago")
@@ -285,6 +313,52 @@ def salvar_dados_fechamento(cliente, info_site):
         print(f"Erro ao salvar dados de fechamento: {str(e)}")
         return False
 
+# ─── SUPABASE: grava registro na tabela 'pagamentos' ─────────────────────────
+def gravar_supabase(cliente, info_site):
+    """Grava os dados do cliente e do site na tabela 'pagamentos' do Supabase."""
+    try:
+        # Converte vencimento DD/MM/YYYY → YYYY-MM-DD para o banco
+        venc_db = None
+        venc_raw = info_site.get('vencimento', '')
+        if venc_raw and venc_raw != 'N/A':
+            for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
+                try:
+                    venc_db = datetime.strptime(venc_raw, fmt).strftime('%Y-%m-%d')
+                    break
+                except ValueError:
+                    continue
+
+        # Converte valor para float
+        try:
+            valor_float = float(formatar_valor(cliente['valor']))
+        except (ValueError, TypeError):
+            valor_float = 0.0
+
+        # Converte data da consulta para YYYY-MM-DD
+        data_consulta_db = None
+        data_raw = formatar_data_entrada(cliente['data_consulta'])
+        if data_raw:
+            data_consulta_db = data_raw
+
+        registro = {
+            'nome':            cliente['nome'],
+            'cpf':             cliente['cpf'],
+            'valor':           valor_float,
+            'forma_pagamento': cliente['forma'],
+            'data_consulta':   data_consulta_db,
+            'vencimento':      venc_db,
+            'status':          info_site.get('status', ''),
+            'metodo_site':     info_site.get('metodo_pagamento', ''),
+            'status_planilha': cliente['status'],
+        }
+
+        sb.table('pagamentos').insert(registro).execute()
+        print(f"✓ Dados de {cliente['nome']} gravados no Supabase")
+        return True
+    except Exception as e:
+        print(f"✗ Erro ao gravar no Supabase: {str(e)}")
+        return False
+
 def main():
     """Função principal"""
     try:
@@ -320,6 +394,9 @@ def main():
                     
                     # Salva na planilha de fechamento
                     salvar_dados_fechamento(cliente, info_site)
+
+                    # Grava no Supabase
+                    gravar_supabase(cliente, info_site)
                 else:
                     print(f"✗ Erro ao salvar cadastro de {cliente['nome']}")
             else:

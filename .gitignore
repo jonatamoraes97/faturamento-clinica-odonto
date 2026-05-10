@@ -1,0 +1,15 @@
+# Credenciais — NUNCA subir para o GitHub
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Excel com dados reais de pacientes
+dados_clientes.xlsx
+planilha_fechamento.xlsx
+
+# Arquivos temporários
+*.bak
+*.tmp
