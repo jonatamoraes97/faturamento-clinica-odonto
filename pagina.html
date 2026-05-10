@@ -1,0 +1,1176 @@
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorriso Banguela — Sistema de Pagamentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=DM+Sans:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0B1929;
+    --navy-mid: #132338;
+    --navy-light: #1E3A5F;
+    --teal: #0D9E97;
+    --teal-light: #14B8B0;
+    --teal-dim: rgba(13,158,151,0.12);
+    --bg: #EEF2F7;
+    --surface: #FFFFFF;
+    --surface-2: #F7F9FC;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text-1: #0B1929;
+    --text-2: #4A5568;
+    --text-3: #8896A4;
+    --success: #15803D;
+    --success-bg: #DCFCE7;
+    --success-border: #BBF7D0;
+    --danger: #B91C1C;
+    --danger-bg: #FEE2E2;
+    --danger-border: #FECACA;
+    --warn: #92400E;
+    --warn-bg: #FEF3C7;
+    --warn-border: #FDE68A;
+    --info: #1E40AF;
+    --info-bg: #DBEAFE;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --sidebar-w: 240px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-1); font-size: 15px; }
+
+  /* ── LAYOUT ── */
+  .shell { display: flex; height: 100vh; overflow: hidden; }
+
+  .sidebar {
+    width: var(--sidebar-w); background: var(--navy); flex-shrink: 0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar-logo .brand { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; line-height: 1.1; }
+  .sidebar-logo .sub { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px; }
+
+  .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-radius: var(--radius); cursor: pointer; transition: all 0.15s;
+    font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.5);
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+  .nav-item.active { background: var(--teal-dim); color: var(--teal-light); font-weight: 500; border-left: 2px solid var(--teal); padding-left: 12px; }
+  .nav-item .icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .sidebar-footer .version { font-size: 11px; color: rgba(255,255,255,0.2); }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 16px; font-weight: 500; color: var(--text-1); }
+  .topbar-date { font-size: 13px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+  /* ── VIEWS ── */
+  .view { display: none; animation: fadeIn 0.2s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── CARDS & KPI ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 20px 22px; position: relative; overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .kpi-accent { position: absolute; top: 0; left: 0; width: 4px; height: 100%; border-radius: 4px 0 0 4px; }
+  .kpi-label { font-size: 12px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 300; color: var(--text-1); line-height: 1; }
+  .kpi-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; }
+  .kpi-sub { font-size: 12px; color: var(--text-3); margin-top: 6px; }
+
+  .card {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--text-1); }
+  .card-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--surface-2); }
+  th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 13px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface-2); }
+
+  .patient-name { font-weight: 500; color: var(--text-1); }
+  .patient-cpf { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-2); }
+  .patient-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text-1); }
+  .patient-date { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-3); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .badge.pago { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+  .badge.pago .badge-dot { background: var(--success); }
+  .badge.atrasado { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+  .badge.atrasado .badge-dot { background: var(--danger); }
+  .badge.pendente { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+  .badge.pendente .badge-dot { background: var(--warn); }
+
+  .method-tag {
+    display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px;
+    font-weight: 500; background: var(--bg); color: var(--text-2); border: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* ── ACTIONS ── */
+  .action-btn {
+    padding: 5px 9px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; font-size: 13px; color: var(--text-2);
+    transition: all 0.15s; line-height: 1;
+  }
+  .action-btn:hover { border-color: var(--border-strong); background: var(--bg); }
+  .action-btn.danger:hover { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
+  .action-btn.success:hover { border-color: var(--success-border); color: var(--success); background: var(--success-bg); }
+  .actions-cell { display: flex; gap: 5px; align-items: center; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; gap: 18px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .form-input, .form-select {
+    padding: 10px 14px; border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--text-1); background: var(--surface); outline: none; width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-input.mono { font-family: 'JetBrains Mono', monospace; }
+  .form-input:focus, .form-select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,158,151,0.12); }
+  .form-input.error { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+  .form-input.valid { border-color: #22C55E; }
+  .form-error { font-size: 12px; color: #EF4444; display: flex; align-items: center; gap: 4px; }
+  .form-hint { font-size: 12px; color: var(--text-3); }
+
+  .check-row { display: flex; align-items: center; gap: 10px; }
+  .check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--teal); cursor: pointer; }
+  .check-row label { font-size: 14px; color: var(--text-1); cursor: pointer; user-select: none; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px;
+    border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--teal); color: #fff; }
+  .btn-primary:hover { background: var(--teal-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,158,151,0.3); }
+  .btn-secondary { background: var(--surface); color: var(--text-2); border: 1.5px solid var(--border-strong); }
+  .btn-secondary:hover { background: var(--bg); border-color: var(--border-strong); }
+  .btn-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn:active { transform: scale(0.98); }
+
+  /* ── SEARCH ── */
+  .search-bar { position: relative; }
+  .search-bar input { padding-left: 38px; width: 100%; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .toolbar .search-bar { flex: 1; min-width: 220px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(11,25,41,0.6);
+    backdrop-filter: blur(2px); z-index: 1000; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; animation: overlayIn 0.2s ease; }
+  @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 28px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    animation: modalIn 0.25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+  .modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .modal-title { font-size: 18px; font-weight: 500; color: var(--text-1); }
+  .modal-sub { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 22px; line-height: 1; padding: 2px; border-radius: 6px; transition: all 0.1s; }
+  .modal-close:hover { background: var(--bg); color: var(--text-1); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+  /* ── TOAST ── */
+  #toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+  .toast {
+    background: var(--navy); color: #fff; padding: 13px 18px; border-radius: var(--radius);
+    font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow);
+    animation: toastIn 0.3s cubic-bezier(.34,1.56,.64,1);
+    border-left: 3px solid var(--teal);
+    pointer-events: all; max-width: 320px;
+  }
+  .toast.success { border-left-color: #22C55E; }
+  .toast.error { border-left-color: #EF4444; }
+  .toast.warning { border-left-color: #F59E0B; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(30px); height: 0; padding: 0; margin: 0; } }
+
+  /* ── VALIDATION RESULT ── */
+  .val-result { border-radius: var(--radius-lg); border: 1.5px solid; padding: 20px; margin-top: 20px; }
+  .val-result.valid { border-color: var(--success-border); background: var(--success-bg); }
+  .val-result.invalid { border-color: var(--danger-border); background: var(--danger-bg); }
+  .val-result-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .val-result.valid .val-result-title { color: var(--success); }
+  .val-result.invalid .val-result-title { color: var(--danger); }
+  .val-detail { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+  .val-detail:last-child { margin-bottom: 0; }
+  .val-icon { font-size: 14px; }
+
+  /* ── DIVIDER ── */
+  .section-divider { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-3); }
+  .empty-state .big-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── OVERDUE HIGHLIGHT ── */
+  tr.overdue { background: rgba(254,226,226,0.3); }
+  tr.overdue:hover { background: rgba(254,226,226,0.5); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .form-row, .form-row.three { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Sorriso Banguela</div>
+      <div class="sub">Painel Administrativo</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="navigate('dashboard')">
+        <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 000 2h1v1a1 1 0 002 0V6h1a1 1 0 000-2H3zm9 0a1 1 0 000 2h1v1a1 1 0 002 0V6h1a1 1 0 000-2h-4zm-9 7a1 1 0 000 2h1v1a1 1 0 002 0v-1h1a1 1 0 000-2H3zm9 0a1 1 0 000 2h1v1a1 1 0 002 0v-1h1a1 1 0 000-2h-4z"></path><path fill-rule="evenodd" d="M1 2a1 1 0 011-1h16a1 1 0 011 1v16a1 1 0 01-1 1H2a1 1 0 01-1-1V2zm2 1v14h14V3H3z" clip-rule="evenodd"></path></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" onclick="navigate('cadastro')">
+        <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path></svg>
+        Cadastrar Paciente
+      </button>
+      <button class="nav-item" onclick="navigate('consulta')">
+        <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+        Consultar Pagamentos
+      </button>
+      <button class="nav-item" onclick="navigate('validacao')">
+        <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        Validar CPF/Dados
+      </button>
+      <button class="nav-item" onclick="navigate('relatorio')">
+        <svg class="icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v2a1 1 0 102 0v-2zm2-5a1 1 0 011 1v6a1 1 0 11-2 0V8a1 1 0 011-1zm4 2a1 1 0 10-2 0v4a1 1 0 102 0v-4z" clip-rule="evenodd"></path></svg>
+        Relatório
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="version">v1.0.0 — 2025</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <span class="topbar-title" id="page-title">Dashboard</span>
+      <span class="topbar-date" id="topbar-date">quinta-feira, 30 de abril de 2026</span>
+    </header>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <section id="view-dashboard" class="view active">
+        <div class="kpi-grid" id="kpi-area"><div class="kpi">
+    <div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-label">Total de pacientes</div>
+    <div class="kpi-value ">5</div>
+    <div class="kpi-sub">cadastrados no sistema</div>
+  </div><div class="kpi">
+    <div class="kpi-accent" style="background:#22C55E"></div>
+    <div class="kpi-label">Pagamentos em dia</div>
+    <div class="kpi-value ">1</div>
+    <div class="kpi-sub">20% do total</div>
+  </div><div class="kpi">
+    <div class="kpi-accent" style="background:#EF4444"></div>
+    <div class="kpi-label">Em atraso</div>
+    <div class="kpi-value ">4</div>
+    <div class="kpi-sub">requer atenção</div>
+  </div><div class="kpi">
+    <div class="kpi-accent" style="background:var(--teal)"></div>
+    <div class="kpi-label">Receita recebida</div>
+    <div class="kpi-value mono">R$&nbsp;3.200,00</div>
+    <div class="kpi-sub">R$&nbsp;10.100,00 a receber</div>
+  </div></div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Todos os Pacientes</div>
+              <div class="card-sub">Visão geral dos pagamentos cadastrados</div>
+            </div>
+            <button class="btn btn-primary" onclick="navigate('cadastro')">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"></path></svg>
+              Novo paciente
+            </button>
+          </div>
+          <div class="table-wrap" id="dashboard-table"><table>
+    <thead><tr>
+      <th>Paciente</th><th>CPF</th><th>Valor</th><th>Pagamento</th><th>Vencimento</th><th>Status</th><th>Ações</th>
+    </tr></thead>
+    <tbody><tr class="overdue">
+      <td><div class="patient-name">Ana Paula Ferreira</div></td>
+      <td><span class="patient-cpf">529.982.247-25</span></td>
+      <td><span class="patient-value">R$&nbsp;1.850,00</span></td>
+      <td><span class="method-tag">PIX</span></td>
+      <td><span class="patient-date">10/03/2025</span></td>
+      <td><span class="badge atrasado"><span class="badge-dot"></span>416d de atraso</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn success" onclick="togglePago(1)" title="Marcar como pago">✓</button>
+          <button class="action-btn" onclick="editarPaciente(1)" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(1)" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr><tr class="">
+      <td><div class="patient-name">Carlos Eduardo Mendes</div></td>
+      <td><span class="patient-cpf">111.444.777-35</span></td>
+      <td><span class="patient-value">R$&nbsp;3.200,00</span></td>
+      <td><span class="method-tag">Cartão</span></td>
+      <td><span class="patient-date">20/04/2025</span></td>
+      <td><span class="badge pago"><span class="badge-dot"></span>Pago</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn " onclick="togglePago(2)" title="Desmarcar pago">↩</button>
+          <button class="action-btn" onclick="editarPaciente(2)" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(2)" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr><tr class="overdue">
+      <td><div class="patient-name">Mariana Costa Silva</div></td>
+      <td><span class="patient-cpf">987.654.321-00</span></td>
+      <td><span class="patient-value">R$&nbsp;750,00</span></td>
+      <td><span class="method-tag">Boleto</span></td>
+      <td><span class="patient-date">28/04/2025</span></td>
+      <td><span class="badge atrasado"><span class="badge-dot"></span>367d de atraso</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn success" onclick="togglePago(3)" title="Marcar como pago">✓</button>
+          <button class="action-btn" onclick="editarPaciente(3)" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(3)" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr><tr class="overdue">
+      <td><div class="patient-name">João Roberto Alves</div></td>
+      <td><span class="patient-cpf">456.123.789-09</span></td>
+      <td><span class="patient-value">R$&nbsp;5.400,00</span></td>
+      <td><span class="method-tag">Dinheiro</span></td>
+      <td><span class="patient-date">05/05/2025</span></td>
+      <td><span class="badge atrasado"><span class="badge-dot"></span>360d de atraso</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn success" onclick="togglePago(4)" title="Marcar como pago">✓</button>
+          <button class="action-btn" onclick="editarPaciente(4)" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(4)" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr><tr class="overdue">
+      <td><div class="patient-name">Fernanda Lima Rocha</div></td>
+      <td><span class="patient-cpf">369.818.868-00</span></td>
+      <td><span class="patient-value">R$&nbsp;2.100,00</span></td>
+      <td><span class="method-tag">PIX</span></td>
+      <td><span class="patient-date">15/02/2025</span></td>
+      <td><span class="badge atrasado"><span class="badge-dot"></span>439d de atraso</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn success" onclick="togglePago(5)" title="Marcar como pago">✓</button>
+          <button class="action-btn" onclick="editarPaciente(5)" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(5)" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr></tbody>
+  </table></div>
+        </div>
+      </section>
+
+      <!-- ── CADASTRO ── -->
+      <section id="view-cadastro" class="view">
+        <div class="card" style="max-width:620px">
+          <div class="modal-header" style="margin-bottom:0">
+            <div>
+              <div class="card-title" id="form-title">Cadastrar Novo Paciente</div>
+              <div class="card-sub" id="form-sub">Preencha os dados do paciente e do pagamento</div>
+            </div>
+          </div>
+          <div style="margin-top:24px">
+            <div class="section-divider">Dados Pessoais</div>
+            <div class="form-grid">
+              <div class="form-row">
+                <div class="form-group" style="grid-column:1/-1">
+                  <label class="form-label">Nome Completo *</label>
+                  <input type="text" id="f-nome" class="form-input" placeholder="Ex: Maria da Silva">
+                  <span class="form-error" id="err-nome" style="display:none"></span>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">CPF *</label>
+                  <input type="text" id="f-cpf" class="form-input mono" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)">
+                  <span class="form-error" id="err-cpf" style="display:none"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Forma de Pagamento *</label>
+                  <select id="f-forma" class="form-select">
+                    <option value="">Selecionar...</option>
+                    <option value="pix">PIX</option>
+                    <option value="cartao">Cartão de Crédito/Débito</option>
+                    <option value="boleto">Boleto Bancário</option>
+                    <option value="dinheiro">Dinheiro</option>
+                  </select>
+                  <span class="form-error" id="err-forma" style="display:none"></span>
+                </div>
+              </div>
+
+              <div class="section-divider" style="margin-top:8px">Dados do Pagamento</div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Valor do Procedimento *</label>
+                  <input type="text" id="f-valor" class="form-input mono" placeholder="R$ 0,00" oninput="maskValor(this)">
+                  <span class="form-error" id="err-valor" style="display:none"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Data da Consulta *</label>
+                  <input type="date" id="f-venc" class="form-input">
+                  <span class="form-error" id="err-venc" style="display:none"></span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="check-row">
+                  <input type="checkbox" id="f-pago">
+                  <label for="f-pago">Marcar como pago imediatamente</label>
+                </div>
+                <span class="form-hint">Marque se o pagamento já foi realizado no ato do cadastro</span>
+              </div>
+            </div>
+            <div class="modal-footer" style="padding-top:24px; margin-top:24px">
+              <button class="btn btn-secondary" onclick="limparForm()">Limpar campos</button>
+              <button class="btn btn-primary" onclick="salvarPaciente()" id="btn-salvar">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293z"></path></svg>
+                Cadastrar Paciente
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CONSULTA ── -->
+      <section id="view-consulta" class="view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Consulta de Pagamentos</div>
+              <div class="card-sub">Busque por nome ou CPF do paciente</div>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="search-bar" style="flex:1;min-width:240px">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+              <input type="text" id="search-input" class="form-input" placeholder="Nome ou CPF..." oninput="renderConsulta()">
+            </div>
+            <select class="form-select" id="filter-status" onchange="renderConsulta()" style="width:160px">
+              <option value="">Todos os status</option>
+              <option value="pago">Pago</option>
+              <option value="atrasado">Atrasado</option>
+              <option value="pendente">Pendente</option>
+            </select>
+            <select class="form-select" id="filter-forma" onchange="renderConsulta()" style="width:160px">
+              <option value="">Todas as formas</option>
+              <option value="pix">PIX</option>
+              <option value="cartao">Cartão</option>
+              <option value="boleto">Boleto</option>
+              <option value="dinheiro">Dinheiro</option>
+            </select>
+          </div>
+          <div id="count-info" style="font-size:13px;color:var(--text-3);margin-bottom:12px"></div>
+          <div class="table-wrap" id="consulta-table"></div>
+        </div>
+      </section>
+
+      <!-- ── VALIDAÇÃO ── -->
+      <section id="view-validacao" class="view">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:6px">Validador de CPF</div>
+            <div class="card-sub" style="margin-bottom:20px">Verifica autenticidade usando o algoritmo oficial</div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">CPF a Validar</label>
+              <input type="text" id="val-cpf" class="form-input mono" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)" onkeyup="validarCPFInput()">
+            </div>
+            <div id="val-cpf-result"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:6px">Consulta Rápida por CPF</div>
+            <div class="card-sub" style="margin-bottom:20px">Verifique situação de pagamento de um paciente</div>
+            <div class="form-group" style="margin-bottom:16px">
+              <label class="form-label">CPF do Paciente</label>
+              <input type="text" id="lookup-cpf" class="form-input mono" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)">
+            </div>
+            <button class="btn btn-primary" onclick="consultarPorCPF()" style="width:100%">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+              Consultar
+            </button>
+            <div id="lookup-result" style="margin-top:16px"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:0">
+          <div class="card-title" style="margin-bottom:6px">Calculadora de Atraso</div>
+          <div class="card-sub" style="margin-bottom:20px">Calcule quantos dias de atraso há em relação a um vencimento</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end">
+            <div class="form-group">
+              <label class="form-label">Data da Consulta</label>
+              <input type="date" id="calc-venc" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data de Referência</label>
+              <input type="date" id="calc-ref" class="form-input">
+            </div>
+            <button class="btn btn-secondary" onclick="calcularAtraso()">Calcular</button>
+          </div>
+          <div id="calc-result" style="margin-top:16px"></div>
+        </div>
+      </section>
+
+      <!-- ── RELATÓRIO ── -->
+      <section id="view-relatorio" class="view">
+        <div class="kpi-grid" id="rel-kpis"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:16px">Por Forma de Pagamento</div>
+            <div id="rel-formas"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:16px">Maiores Atrasos</div>
+            <div id="rel-maiores"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <div class="card-header">
+            <div class="card-title">Inadimplentes</div>
+            <button class="btn btn-secondary" onclick="exportarCSV()">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+              Exportar CSV
+            </button>
+          </div>
+          <div class="table-wrap" id="rel-inadimplentes"></div>
+        </div>
+      </section>
+
+    </div><!-- content -->
+  </main>
+</div>
+
+<!-- MODAL EDIÇÃO -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Editar Paciente</div>
+        <div class="modal-sub" id="edit-sub">Atualize os dados do pagamento</div>
+      </div>
+      <button class="modal-close" onclick="fecharModal()">×</button>
+    </div>
+    <div class="section-divider">Dados Pessoais</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Nome Completo *</label>
+          <input type="text" id="e-nome" class="form-input" placeholder="Nome completo">
+          <span class="form-error" id="eerr-nome" style="display:none"></span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">CPF *</label>
+          <input type="text" id="e-cpf" class="form-input mono" maxlength="14" oninput="maskCPF(this)">
+          <span class="form-error" id="eerr-cpf" style="display:none"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Forma de Pagamento *</label>
+          <select id="e-forma" class="form-select">
+            <option value="">Selecionar...</option>
+            <option value="pix">PIX</option>
+            <option value="cartao">Cartão</option>
+            <option value="boleto">Boleto</option>
+            <option value="dinheiro">Dinheiro</option>
+          </select>
+          <span class="form-error" id="eerr-forma" style="display:none"></span>
+        </div>
+      </div>
+      <div class="section-divider" style="margin-top:4px">Dados do Pagamento</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor *</label>
+          <input type="text" id="e-valor" class="form-input mono" oninput="maskValor(this)">
+          <span class="form-error" id="eerr-valor" style="display:none"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data da Consulta *</label>
+          <input type="date" id="e-venc" class="form-input">
+          <span class="form-error" id="eerr-venc" style="display:none"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="check-row">
+          <input type="checkbox" id="e-pago">
+          <label for="e-pago">Pagamento realizado</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAÇÃO -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Confirmar exclusão</div>
+    </div>
+    <p style="font-size:14px;color:var(--text-2);line-height:1.6">Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.</p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('modal-confirm').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'odonto_pagamentos';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  const seed = [
+    { id: 1, nome: "Ana Paula Ferreira",     cpf: "529.982.247-25", valor: 1850.00, forma: "pix",      venc: "2025-03-10", pago: false },
+    { id: 2, nome: "Carlos Eduardo Mendes",  cpf: "111.444.777-35", valor: 3200.00, forma: "cartao",   venc: "2025-04-20", pago: true  },
+    { id: 3, nome: "Mariana Costa Silva",    cpf: "987.654.321-00", valor:  750.00, forma: "boleto",   venc: "2025-04-28", pago: false },
+    { id: 4, nome: "João Roberto Alves",     cpf: "456.123.789-09", valor: 5400.00, forma: "dinheiro", venc: "2025-05-05", pago: false },
+    { id: 5, nome: "Fernanda Lima Rocha",    cpf: "369.818.868-00", valor: 2100.00, forma: "pix",      venc: "2025-02-15", pago: false },
+  ];
+  saveData(seed);
+  return seed;
+}
+
+function saveData(d) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+}
+
+let DB = loadData();
+
+// ─── UTILS ──────────────────────────────────────────────────────────────────
+function validarCPF(cpf) {
+  cpf = cpf.replace(/\D/g, '');
+  if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += +cpf[i] * (10 - i);
+  let r = (s * 10) % 11; if (r === 10 || r === 11) r = 0;
+  if (r !== +cpf[9]) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += +cpf[i] * (11 - i);
+  r = (s * 10) % 11; if (r === 10 || r === 11) r = 0;
+  return r === +cpf[10];
+}
+
+function maskCPF(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+  el.value = v;
+}
+
+function maskValor(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (!v) { el.value = ''; return; }
+  v = (parseInt(v) / 100).toFixed(2);
+  el.value = 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseValor(str) {
+  const n = parseFloat(str.replace(/[^\d,]/g, '').replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+
+function fmtValor(v) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function fmtData(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
+}
+
+function diasAtraso(venc) {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const v = new Date(venc + 'T00:00:00');
+  const d = Math.floor((hoje - v) / 86400000);
+  return d > 0 ? d : 0;
+}
+
+function status(item) {
+  if (item.pago) return 'pago';
+  return diasAtraso(item.venc) > 0 ? 'atrasado' : 'pendente';
+}
+
+function badgeHTML(item) {
+  const s = status(item);
+  const dias = diasAtraso(item.venc);
+  if (s === 'pago') return `<span class="badge pago"><span class="badge-dot"></span>Pago</span>`;
+  if (s === 'atrasado') return `<span class="badge atrasado"><span class="badge-dot"></span>${dias}d de atraso</span>`;
+  return `<span class="badge pendente"><span class="badge-dot"></span>Pendente</span>`;
+}
+
+function formaLabel(f) {
+  return { pix:'PIX', cartao:'Cartão', boleto:'Boleto', dinheiro:'Dinheiro' }[f] || f;
+}
+
+function nextId() {
+  return DB.length ? Math.max(...DB.map(d => d.id)) + 1 : 1;
+}
+
+// ─── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success: '✓', error: '✕', warning: '⚠' };
+  t.innerHTML = `<span>${icons[type] || '●'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+const PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  cadastro: 'Cadastrar Paciente',
+  consulta: 'Consultar Pagamentos',
+  validacao: 'Validar CPF / Dados',
+  relatorio: 'Relatório Financeiro',
+};
+
+function navigate(page) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`view-${page}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(page)) n.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = PAGE_TITLES[page];
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'consulta') renderConsulta();
+  if (page === 'relatorio') renderRelatorio();
+  if (page === 'cadastro') { limparForm(); document.getElementById('form-title').textContent = 'Cadastrar Novo Paciente'; document.getElementById('form-sub').textContent = 'Preencha os dados do paciente e do pagamento'; document.getElementById('btn-salvar').innerHTML = `<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293z"/></svg>Cadastrar Paciente`; editingId = null; }
+}
+
+// ─── RENDER TABLE ───────────────────────────────────────────────────────────
+function renderTable(data, container, opts = {}) {
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state"><div class="big-icon">📋</div><p>Nenhum registro encontrado</p></div>`;
+    return;
+  }
+  const rows = data.map(item => {
+    const s = status(item);
+    return `<tr class="${s === 'atrasado' ? 'overdue' : ''}">
+      <td><div class="patient-name">${item.nome}</div></td>
+      <td><span class="patient-cpf">${item.cpf}</span></td>
+      <td><span class="patient-value">${fmtValor(item.valor)}</span></td>
+      <td><span class="method-tag">${formaLabel(item.forma)}</span></td>
+      <td><span class="patient-date">${fmtData(item.venc)}</span></td>
+      <td>${badgeHTML(item)}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn ${item.pago ? '' : 'success'}" onclick="togglePago(${item.id})" title="${item.pago ? 'Desmarcar pago' : 'Marcar como pago'}">${item.pago ? '↩' : '✓'}</button>
+          <button class="action-btn" onclick="editarPaciente(${item.id})" title="Editar">✎</button>
+          <button class="action-btn danger" onclick="confirmarExclusao(${item.id})" title="Excluir">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `<table>
+    <thead><tr>
+      <th>Paciente</th><th>CPF</th><th>Valor</th><th>Pagamento</th><th>Vencimento</th><th>Status</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ─── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const total = DB.length;
+  const pagos = DB.filter(d => d.pago).length;
+  const atrasados = DB.filter(d => !d.pago && diasAtraso(d.venc) > 0).length;
+  const pendentes = total - pagos - atrasados;
+  const receita = DB.filter(d => d.pago).reduce((a, b) => a + b.valor, 0);
+  const aReceber = DB.filter(d => !d.pago).reduce((a, b) => a + b.valor, 0);
+
+  document.getElementById('kpi-area').innerHTML = [
+    { label: 'Total de pacientes', val: total, sub: 'cadastrados no sistema', color: 'var(--teal)' },
+    { label: 'Pagamentos em dia', val: pagos, sub: `${Math.round(pagos/total*100)||0}% do total`, color: '#22C55E' },
+    { label: 'Em atraso', val: atrasados, sub: atrasados > 0 ? 'requer atenção' : 'nenhum atraso', color: atrasados > 0 ? '#EF4444' : '#22C55E' },
+    { label: 'Receita recebida', val: fmtValor(receita), mono: true, sub: `${fmtValor(aReceber)} a receber`, color: 'var(--teal)' },
+  ].map(k => `<div class="kpi">
+    <div class="kpi-accent" style="background:${k.color}"></div>
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value ${k.mono ? 'mono' : ''}">${k.val}</div>
+    <div class="kpi-sub">${k.sub}</div>
+  </div>`).join('');
+
+  renderTable(DB, document.getElementById('dashboard-table'));
+}
+
+// ─── CONSULTA ───────────────────────────────────────────────────────────────
+function renderConsulta() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const sf = document.getElementById('filter-status')?.value || '';
+  const ff = document.getElementById('filter-forma')?.value || '';
+  let data = DB.filter(item => {
+    const matchQ = !q || item.nome.toLowerCase().includes(q) || item.cpf.replace(/\D/g,'').includes(q.replace(/\D/g,''));
+    const matchS = !sf || status(item) === sf;
+    const matchF = !ff || item.forma === ff;
+    return matchQ && matchS && matchF;
+  });
+  const info = document.getElementById('count-info');
+  if (info) info.textContent = `${data.length} resultado${data.length !== 1 ? 's' : ''} encontrado${data.length !== 1 ? 's' : ''}`;
+  renderTable(data, document.getElementById('consulta-table'));
+}
+
+// ─── RELATÓRIO ──────────────────────────────────────────────────────────────
+function renderRelatorio() {
+  const total = DB.length;
+  const pagos = DB.filter(d => d.pago);
+  const atrasados = DB.filter(d => !d.pago && diasAtraso(d.venc) > 0);
+  const totalArrecad = pagos.reduce((a, b) => a + b.valor, 0);
+  const totalDevido = atrasados.reduce((a, b) => a + b.valor, 0);
+  const taxaAdim = total ? Math.round(pagos.length / total * 100) : 0;
+
+  document.getElementById('rel-kpis').innerHTML = [
+    { label: 'Total arrecadado', val: fmtValor(totalArrecad), color: '#22C55E' },
+    { label: 'Valor em atraso', val: fmtValor(totalDevido), color: '#EF4444' },
+    { label: 'Taxa de adimplência', val: `${taxaAdim}%`, color: taxaAdim >= 70 ? '#22C55E' : '#EF4444' },
+    { label: 'Qtd inadimplentes', val: atrasados.length, color: '#EF4444' },
+  ].map(k => `<div class="kpi">
+    <div class="kpi-accent" style="background:${k.color}"></div>
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value mono">${k.val}</div>
+  </div>`).join('');
+
+  const formas = { pix: 0, cartao: 0, boleto: 0, dinheiro: 0 };
+  DB.forEach(d => { if (formas[d.forma] !== undefined) formas[d.forma]++; });
+  const maxF = Math.max(...Object.values(formas)) || 1;
+  document.getElementById('rel-formas').innerHTML = Object.entries(formas).map(([k, v]) => {
+    const pct = Math.round(v / (total || 1) * 100);
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="font-weight:500">${formaLabel(k)}</span>
+        <span style="color:var(--text-3)">${v} paciente${v !== 1 ? 's' : ''} (${pct}%)</span>
+      </div>
+      <div style="background:var(--bg);border-radius:4px;height:8px;overflow:hidden">
+        <div style="background:var(--teal);height:100%;width:${pct}%;border-radius:4px;transition:width 0.5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const sorted = [...atrasados].sort((a, b) => diasAtraso(b.venc) - diasAtraso(a.venc)).slice(0, 5);
+  document.getElementById('rel-maiores').innerHTML = sorted.length ? sorted.map(item => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:500;font-size:14px">${item.nome}</div>
+        <div style="font-size:12px;color:var(--text-3)">${fmtValor(item.valor)}</div>
+      </div>
+      <span class="badge atrasado">${diasAtraso(item.venc)}d</span>
+    </div>`).join('') : '<p style="color:var(--text-3);font-size:14px">Nenhum atraso registrado 🎉</p>';
+
+  renderTable(atrasados, document.getElementById('rel-inadimplentes'));
+}
+
+// ─── FORM CADASTRO ───────────────────────────────────────────────────────────
+let editingId = null;
+
+function clearError(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = '⚠ ' + msg; el.style.display = 'flex'; }
+}
+function setInputState(id, state) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('error', 'valid');
+  if (state) el.classList.add(state);
+}
+
+function validarFormCampos(prefix) {
+  const p = prefix === 'e' ? 'e' : 'f';
+  const ep = prefix === 'e' ? 'eerr' : 'err';
+  let ok = true;
+
+  const nome = document.getElementById(`${p}-nome`).value.trim();
+  clearError(`${ep}-nome`);
+  if (!nome) { showError(`${ep}-nome`, 'Nome obrigatório'); setInputState(`${p}-nome`, 'error'); ok = false; }
+  else if (nome.length < 3) { showError(`${ep}-nome`, 'Nome muito curto'); setInputState(`${p}-nome`, 'error'); ok = false; }
+  else setInputState(`${p}-nome`, 'valid');
+
+  const cpf = document.getElementById(`${p}-cpf`).value;
+  const cpfDigits = cpf.replace(/\D/g,'');
+  clearError(`${ep}-cpf`);
+  if (!cpfDigits) { showError(`${ep}-cpf`, 'CPF obrigatório'); setInputState(`${p}-cpf`, 'error'); ok = false; }
+  else if (cpfDigits.length !== 11) { showError(`${ep}-cpf`, 'CPF deve conter 11 dígitos'); setInputState(`${p}-cpf`, 'error'); ok = false; }
+  else setInputState(`${p}-cpf`, 'valid');
+
+  const valorStr = document.getElementById(`${p}-valor`).value;
+  const valor = parseValor(valorStr);
+  clearError(`${ep}-valor`);
+  if (!valorStr) { showError(`${ep}-valor`, 'Valor obrigatório'); setInputState(`${p}-valor`, 'error'); ok = false; }
+  else if (valor <= 0) { showError(`${ep}-valor`, 'Valor deve ser maior que zero'); setInputState(`${p}-valor`, 'error'); ok = false; }
+  else setInputState(`${p}-valor`, 'valid');
+
+  const forma = document.getElementById(`${p}-forma`).value;
+  clearError(`${ep}-forma`);
+  if (!forma) { showError(`${ep}-forma`, 'Selecione a forma de pagamento'); setInputState(`${p}-forma`, 'error'); ok = false; }
+
+  const venc = document.getElementById(`${p}-venc`).value;
+  clearError(`${ep}-venc`);
+  if (!venc) { showError(`${ep}-venc`, 'Data de vencimento obrigatória'); setInputState(`${p}-venc`, 'error'); ok = false; }
+
+  return ok;
+}
+
+function salvarPaciente() {
+  if (!validarFormCampos('f')) return;
+  const item = {
+    id: nextId(),
+    nome: document.getElementById('f-nome').value.trim(),
+    cpf: document.getElementById('f-cpf').value,
+    valor: parseValor(document.getElementById('f-valor').value),
+    forma: document.getElementById('f-forma').value,
+    venc: document.getElementById('f-venc').value,
+    pago: document.getElementById('f-pago').checked,
+  };
+  DB.push(item);
+  saveData(DB);
+  limparForm();
+  toast('Paciente cadastrado com sucesso!', 'success');
+  setTimeout(() => navigate('dashboard'), 600);
+}
+
+function limparForm() {
+  ['f-nome','f-cpf','f-valor','f-venc'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('error','valid'); }
+  });
+  const forma = document.getElementById('f-forma');
+  if (forma) forma.value = '';
+  const pago = document.getElementById('f-pago');
+  if (pago) pago.checked = false;
+  ['err-nome','err-cpf','err-valor','err-forma','err-venc'].forEach(id => clearError(id));
+}
+
+// ─── EDIÇÃO ──────────────────────────────────────────────────────────────────
+function editarPaciente(id) {
+  const item = DB.find(d => d.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('e-nome').value = item.nome;
+  document.getElementById('e-cpf').value = item.cpf;
+  document.getElementById('e-forma').value = item.forma;
+  document.getElementById('e-venc').value = item.venc;
+  document.getElementById('e-pago').checked = item.pago;
+  const v = item.valor.toFixed(2);
+  document.getElementById('e-valor').value = 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('edit-sub').textContent = item.nome;
+  document.getElementById('modal-edit').classList.add('open');
+}
+
+function salvarEdicao() {
+  if (!validarFormCampos('e')) return;
+  const idx = DB.findIndex(d => d.id === editingId);
+  if (idx === -1) return;
+  DB[idx] = {
+    id: editingId,
+    nome: document.getElementById('e-nome').value.trim(),
+    cpf: document.getElementById('e-cpf').value,
+    valor: parseValor(document.getElementById('e-valor').value),
+    forma: document.getElementById('e-forma').value,
+    venc: document.getElementById('e-venc').value,
+    pago: document.getElementById('e-pago').checked,
+  };
+  saveData(DB);
+  fecharModal();
+  renderDashboard();
+  renderConsulta();
+  toast('Registro atualizado com sucesso!', 'success');
+}
+
+function fecharModal() {
+  document.getElementById('modal-edit').classList.remove('open');
+}
+
+// ─── EXCLUSÃO ────────────────────────────────────────────────────────────────
+function confirmarExclusao(id) {
+  document.getElementById('modal-confirm').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = () => {
+    DB = DB.filter(d => d.id !== id);
+    saveData(DB);
+    document.getElementById('modal-confirm').classList.remove('open');
+    renderDashboard();
+    renderConsulta();
+    toast('Paciente removido.', 'warning');
+  };
+}
+
+// ─── TOGGLE PAGO ─────────────────────────────────────────────────────────────
+function togglePago(id) {
+  const item = DB.find(d => d.id === id);
+  if (!item) return;
+  item.pago = !item.pago;
+  saveData(DB);
+  renderDashboard();
+  renderConsulta();
+  if (document.getElementById('view-relatorio').classList.contains('active')) renderRelatorio();
+  toast(item.pago ? 'Pagamento confirmado!' : 'Status alterado para pendente.', item.pago ? 'success' : 'warning');
+}
+
+// ─── VALIDAÇÃO CPF ───────────────────────────────────────────────────────────
+function validarCPFInput() {
+  const input = document.getElementById('val-cpf');
+  const cpf = input?.value || '';
+  const result = document.getElementById('val-cpf-result');
+  if (!result) return;
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length < 11) { result.innerHTML = ''; return; }
+  const ok = validarCPF(cpf);
+  const checks = [
+    { ok: digits.length === 11, label: '11 dígitos numéricos' },
+    { ok: !/^(\d)\1+$/.test(digits), label: 'Não é uma sequência repetida' },
+    { ok: ok, label: 'Dígitos verificadores corretos' },
+  ];
+  result.innerHTML = `<div class="val-result ${ok ? 'valid' : 'invalid'}">
+    <div class="val-result-title">${ok ? '✓ CPF Válido' : '✕ CPF Inválido'}</div>
+    ${checks.map(c => `<div class="val-detail"><span class="val-icon">${c.ok ? '✓' : '✕'}</span><span>${c.label}</span></div>`).join('')}
+  </div>`;
+}
+
+function consultarPorCPF() {
+  const cpf = document.getElementById('lookup-cpf').value;
+  const el = document.getElementById('lookup-result');
+  if (!cpf.replace(/\D/g,'')) { el.innerHTML = `<div class="val-result invalid"><div class="val-result-title">Digite um CPF para consultar</div></div>`; return; }
+  if (!validarCPF(cpf)) { el.innerHTML = `<div class="val-result invalid"><div class="val-result-title">✕ CPF inválido</div></div>`; return; }
+  const item = DB.find(d => d.cpf.replace(/\D/g,'') === cpf.replace(/\D/g,''));
+  if (!item) {
+    el.innerHTML = `<div class="val-result invalid"><div class="val-result-title">CPF não encontrado no sistema</div><div class="val-detail"><span>Nenhum paciente cadastrado com este CPF</span></div></div>`;
+    return;
+  }
+  const s = status(item);
+  const dias = diasAtraso(item.venc);
+  el.innerHTML = `<div class="val-result valid">
+    <div class="val-result-title">✓ Paciente encontrado</div>
+    <div class="val-detail"><span class="val-icon">👤</span><span><strong>${item.nome}</strong></span></div>
+    <div class="val-detail"><span class="val-icon">💰</span><span>${fmtValor(item.valor)} via ${formaLabel(item.forma)}</span></div>
+    <div class="val-detail"><span class="val-icon">📅</span><span>Vencimento: ${fmtData(item.venc)}</span></div>
+    <div class="val-detail"><span class="val-icon">📊</span><span>Status: ${badgeHTML(item)}${s === 'atrasado' ? ` — ${dias} dia${dias !== 1 ? 's' : ''} em atraso` : ''}</span></div>
+  </div>`;
+}
+
+function calcularAtraso() {
+  const venc = document.getElementById('calc-venc').value;
+  const ref = document.getElementById('calc-ref').value;
+  const el = document.getElementById('calc-result');
+  if (!venc || !ref) { el.innerHTML = `<div class="val-result invalid"><div class="val-result-title">Preencha as duas datas</div></div>`; return; }
+  const v = new Date(venc + 'T00:00:00');
+  const r = new Date(ref + 'T00:00:00');
+  const diff = Math.floor((r - v) / 86400000);
+  if (diff <= 0) {
+    el.innerHTML = `<div class="val-result valid"><div class="val-result-title">✓ Sem atraso</div><div class="val-detail"><span>Pagamento está dentro do prazo — ${Math.abs(diff)} dia${Math.abs(diff)!==1?'s':''} restante${Math.abs(diff)!==1?'s':''}</span></div></div>`;
+  } else {
+    el.innerHTML = `<div class="val-result invalid"><div class="val-result-title">✕ ${diff} dia${diff!==1?'s':''} em atraso</div><div class="val-detail"><span>Venceu em ${fmtData(venc)} — ${diff} dia${diff!==1?'s':''} até a data de referência</span></div></div>`;
+  }
+}
+
+// ─── EXPORT CSV ──────────────────────────────────────────────────────────────
+function exportarCSV() {
+  const rows = [['Nome','CPF','Valor','Forma','Vencimento','Status','Dias Atraso']];
+  DB.filter(d => !d.pago && diasAtraso(d.venc) > 0).forEach(d => {
+    rows.push([d.nome, d.cpf, d.valor.toFixed(2).replace('.',','), formaLabel(d.forma), fmtData(d.venc), 'Atrasado', diasAtraso(d.venc)]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8;base64,' + btoa('\uFEFF' + csv);
+  a.download = 'inadimplentes.csv';
+  a.click();
+  toast('CSV exportado com sucesso!', 'success');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+document.getElementById('calc-ref').value = new Date().toISOString().split('T')[0];
+
+// Close modals on overlay click
+document.getElementById('modal-edit').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModal(); });
+document.getElementById('modal-confirm').addEventListener('click', e => { if (e.target === e.currentTarget) document.getElementById('modal-confirm').classList.remove('open'); });
+
+renderDashboard();
+</script>
+
+
+</body></html>

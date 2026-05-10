@@ -1,0 +1,3 @@
+# Renomeie este arquivo para .env na pasta do projeto
+SUPABASE_URL=https://lbabvykzvjpvaolplsay.supabase.co
+SUPABASE_KEY=sb_publishable_aSkxgh7tMe1eS8O7WThVpw_AQterGBf
