@@ -151,9 +151,12 @@ odonto-gestao/
 
 ## 📸 Screenshots
 
-<img width="643" height="673" alt="image" src="https://github.com/user-attachments/assets/1f1ff1ea-bd8f-4835-b546-554b72a8a3d4" />
+<img width="1902" height="896" alt="image" src="https://github.com/user-attachments/assets/dfbc3bd2-d1b4-4c66-ad43-7652c7a062f0" />
+
 <img width="1914" height="924" alt="image" src="https://github.com/user-attachments/assets/25cd9db5-069a-4cbf-86d6-f2218211f04f" />
+
 <img width="1916" height="928" alt="image" src="https://github.com/user-attachments/assets/82aac96b-1251-443b-ad24-e81cd93c5d38" />
+
 <img width="1916" height="924" alt="image" src="https://github.com/user-attachments/assets/10e5cdaa-1f36-4b4e-8b6a-c2e65a8ae8ec" />
 
 
