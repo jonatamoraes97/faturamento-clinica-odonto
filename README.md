@@ -35,7 +35,7 @@ Esse fluxo de trabalho simulou na prática o ciclo de desenvolvimento ágil: lev
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | HTML5, CSS3, JavaScript puro |
+| Frontend | HTML5, CSS3, JavaScript |
 | Banco de dados | Supabase (PostgreSQL) |
 | Automação | Python 3, Selenium, openpyxl |
 | Deploy | Netlify |
